@@ -98,11 +98,16 @@ update_eeprom() {
 
         cat "${TMP_CONFIG_SIG}"
 
+        TMP_PUBLIC_KEY="$(mktemp)"
+
+        # Create temporary public key pem file
+        openssl rsa -engine pkcs11 -inform engine -pubout -in "${PEM_FILE}" > ${TMP_PUBLIC_KEY}
+
         # rpi-eeprom-config extracts the public key args from the specified
         # PEM file. It will also accept just the public key so it's possible
         # to tweak this script so that rpi-eeprom-config never sees the private
         # key.
-        sign_args="-d ${TMP_CONFIG_SIG} -p ${public_pem_file}"
+        sign_args="-d ${TMP_CONFIG_SIG} -p ${TMP_PUBLIC_KEY}"
     fi
 
     rm -f "${dst_image}"
@@ -181,7 +186,7 @@ while getopts "c:i:o:k:p:fhr" option; do
             ;;
         k) PEM_FILE="${OPTARG}"
            [ -n "${PEM_FILE}" ] || die "Private key not specified [-k]"
-           [ -f "${PEM_FILE}" ] || die "Private key file ${PEM_FILE} not found"
+        #    [ -f "${PEM_FILE}" ] || die "Private key file ${PEM_FILE} not found"
             ;;
         p) PUBLIC_PEM_FILE="${OPTARG}"
             ;;
@@ -210,9 +215,9 @@ fi
 
 [ -f "${SRC_IMAGE}" ] || die "Source image \"${SRC_IMAGE}\" not found"
 [ -f "${CONFIG}" ] || die "Bootloader config file \"${CONFIG}\" not found"
-if [ -n "${PEM_FILE}" ]; then
-    [ -f "${PEM_FILE}" ] || die "RSA key file \"${PEM_FILE}\" not found"
-fi
+# if [ -n "${PEM_FILE}" ]; then
+#     [ -f "${PEM_FILE}" ] || die "RSA key file \"${PEM_FILE}\" not found"
+# fi
 
 # If a public key is specified then use it. Otherwise, if just the private
 # key is specified then let rpi-eeprom-config automatically extract the
